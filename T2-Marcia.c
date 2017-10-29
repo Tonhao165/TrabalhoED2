@@ -21,6 +21,7 @@ typedef struct no *vertice;
 struct no { 
 	char nome;
 	int visitado;
+	int peso[MAX];
 	vertice saindo[MAX]; // Vetor de ponteiros que apontam para as saidas desse vertice
 };	
 
@@ -105,12 +106,9 @@ void mostrar(grafo G){ //Printa todos os vertices em ordem de inserçao com todas
 			printf("| %c | ",G[i]->nome);
 			for (k=0;k<MAX;k++){
 				if(G[i]->saindo[k] != NULL )
-					printf("--> | %c | ",G[i]->saindo[k]->nome);
+					printf("--> | %c-%d | ",G[i]->saindo[k]->nome,G[i]->peso[k]);
 			}
 			printf("\n");
-		}
-		else {
-			printf("| - |\n");
 		}
 	}
 	printf("\n\n");
@@ -126,7 +124,7 @@ vertice busca_vertice(grafo G, char v){ //Busca no grafo o vertice cujo nome é v
 	return NULL;
 }
 
-int adiciona_aresta(grafo G,char v1, char v2){ //Adiciona uma aresta entre os dois vertices
+int adiciona_aresta(grafo G,char v1, char v2,int peso){ //Adiciona uma aresta entre os dois vertices
 	vertice origem,destino;
 	int j;
 	
@@ -146,6 +144,7 @@ int adiciona_aresta(grafo G,char v1, char v2){ //Adiciona uma aresta entre os do
 			for (j = 0;j<MAX;j++){ // 2 fors, meio porco mas o primeiro e para verificar se ja existe essa ligacao
 				if (origem->saindo[j] == NULL){ //Caça um indice vazio do vetor de ligacoes do vertice
 					origem->saindo[j] = destino;
+					origem->peso[j] = peso;
 					return 0;
 				}
 			}
@@ -189,7 +188,13 @@ void Add_Aresta(grafo G){ // Obtem as input do usuario e adiciona as arestas des
 	if (v2 == ESC)
 		return;
 		
-	if (adiciona_aresta(G,v1,v2) == 0)
+	int peso;
+	
+	printf("\nQual o peso da aresta %c -> %c? ",v1,v2);
+	fflush(stdin);
+	scanf("%d",&peso);
+		
+	if (adiciona_aresta(G,v1,v2,peso) == 0)
 		printf("\nAresta %c -> %c adicionada com sucesso!",v1,v2);
 	else{
 		system("pause");
@@ -206,7 +211,11 @@ void Add_Aresta(grafo G){ // Obtem as input do usuario e adiciona as arestas des
 	if (toupper(op) != 'S')
 		return;
 	else {
-		if (adiciona_aresta(G,v2,v1) == 0){
+		printf("\nQual o peso da aresta %c -> %c? ",v2,v1);
+		fflush(stdin);
+		scanf("%d",&peso);
+		
+		if (adiciona_aresta(G,v2,v1,peso) == 0){
 			printf("\nAresta %c -> %c adicionada com sucesso!\n",v2,v1);
 			system("pause");
 		}
@@ -360,26 +369,91 @@ void introducao_do_trabalho(){
 
 
 int busca_profundidade(vertice inicio){
+	printf("%c",inicio->nome);
 	inicio->visitado = 1;
 	int i;
 	for (i=0;i<MAX;i++){
 		if (inicio->saindo[i] != NULL && inicio->saindo[i]->visitado == 0){
+			printf(" -> ");
 			busca_profundidade(inicio->saindo[i]);
 		}
 	}
 }
 
+void Controla_BP(grafo G){
+	char v1;
+	int i;
+	
+	system("cls");
+	mostrar(G);
+	printf("\nQual o vertice que voce deseja iniciar a Busca em Profundidade?: ");
+	
+	do{
+		fflush(stdin);
+		v1 = toupper(getch());
+		if (busca_vertice(G,v1) == NULL)
+			printf("\nErro na busca pelo vertice %c, insere outro...\n",v1);
+	}while(v1 == ENTER || busca_vertice(G,v1) == NULL);
+	
+	if (v1 == ESC)
+		return;
+	
+	printf("\nBusca em profundidade do vertice %c:\n",v1);
+	busca_profundidade(busca_vertice(G,v1));
+	printf("\n\n");
+	system("pause");
+		
+}
+
 int main (){
 	introducao_do_trabalho();
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	int op;
 	grafo G;
 	char visitados[MAX] = ""; //Vetor que armazena todos os nomes dos vertices ja visitados na busca de profundidade
 	
 	inicia_grafo(G);
+
+
+	//TESTE
+	adiciona_vertice(G,'A');
+	adiciona_vertice(G,'B');
+	adiciona_vertice(G,'C');
+	adiciona_vertice(G,'D');
+	adiciona_vertice(G,'E');
 	
-	//busca_profundidade(G,'i');
-	system("Pause");
+	adiciona_aresta(G,'A','E',1);
+	adiciona_aresta(G,'A','D',3);
+	adiciona_aresta(G,'A','C',4);
+	adiciona_aresta(G,'A','B',5);
+	
+	adiciona_aresta(G,'B','C',2);
+	adiciona_aresta(G,'B','A',3);
+	//adiciona_aresta(G,'B','E',4);
+	
+	adiciona_aresta(G,'C','D',5);
+	adiciona_aresta(G,'C','B',6);
+	adiciona_aresta(G,'C','A',3);
+	
+	adiciona_aresta(G,'D','E',7);
+	adiciona_aresta(G,'D','C',3);
+	adiciona_aresta(G,'D','A',2);
+	
+	adiciona_aresta(G,'E','D',1);
+	adiciona_aresta(G,'E','A',3);
+
+	//
+	
 	int i;
 	do{
 		system("cls");
@@ -409,12 +483,7 @@ int main (){
 				Retirar_Aresta(G);
 				break;
 			case 7:
-				busca_profundidade(busca_vertice(G,'A'));
-				for(i=0;i<MAX;i++){
-					if (G[i] != NULL)
-						printf("%d\n",G[i]->visitado);
-				}
-				system("pause");
+				Controla_BP(G);
 				break;
 			/*case 8:
 				mostrar(G);
