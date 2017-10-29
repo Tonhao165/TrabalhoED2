@@ -405,6 +405,55 @@ void Controla_BP(grafo G){
 		
 }
 
+int Busca_Dijkstra(grafo G,vertice inicio, vertice alvo,int custo){
+	int i,min=999,mini=0,selecionado[MAX];
+	inicio->visitado=1;
+	for(i=0;i<MAX;i++){
+		if(min>inicio->peso[i]&&inicio->saindo[i]->visitado==0){
+			min = inicio->peso[i];
+			mini=i;
+		}
+	}
+	if(inicio->nome==alvo->nome){
+		printf("%d",custo);
+	}
+	Busca_Dijkstra(G, inicio->saindo[mini],alvo,custo+min);
+}
+
+void Controla_BD(grafo G,int custo){
+	char v1,v2;
+	int i;
+	
+	system("cls");
+	mostrar(G);
+	printf("\nQual o vertice que voce deseja iniciar?: ");
+	
+	do{
+		fflush(stdin);
+		v1 = toupper(getch());
+		if (busca_vertice(G,v1) == NULL)
+			printf("\nErro na busca pelo vertice %c, insere outro...\n",v1);
+	}while(v1 == ENTER || busca_vertice(G,v1) == NULL);
+	
+	printf("\nQual o vertice que voce deseja ter como alvo?: ");
+	
+	do{
+		fflush(stdin);
+		v2 = toupper(getch());
+		if (busca_vertice(G,v2) == NULL)
+			printf("\nErro na busca pelo vertice %c, insere outro...\n",v2);
+	}while(v2 == ENTER || busca_vertice(G,v2) == NULL);
+	
+	
+	if (v2 == ESC)
+		return;
+		
+	printf("\nBusca em Dijkstra do vertice %c indo ate o vertice %c\n",v1,v2);
+	Busca_Dijkstra(G,busca_vertice(G,v1),busca_vertice(G,v2),custo);
+	printf("\n\n");
+	system("pause");
+}
+
 int main (){
 	introducao_do_trabalho();
 	
@@ -418,7 +467,7 @@ int main (){
 	
 	
 	
-	int op;
+	int op,custo=0;
 	grafo G;
 	char visitados[MAX] = ""; //Vetor que armazena todos os nomes dos vertices ja visitados na busca de profundidade
 	
@@ -463,7 +512,8 @@ int main (){
 				"3-Adicionar Aresta\n"
 				"4-Remover Aresta\n"
 				"6-Sair\n"
-				"7-Busca em profundidade\n");
+				"7-Busca em profundidade\n"
+				"8-Busca pelo algoritmo de Dijkstra\n");
 	
 		do {
 			scanf("%d",&op);
@@ -485,10 +535,10 @@ int main (){
 			case 7:
 				Controla_BP(G);
 				break;
-			/*case 8:
-				mostrar(G);
-				system("pause");
-				break;*/
+			case 8:
+				Controla_BD(G,custo);
+				printf("Custo: %d",custo);
+				break;
 			default:
 				break;
 		}
