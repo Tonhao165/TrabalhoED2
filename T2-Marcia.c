@@ -15,10 +15,12 @@
 #include <stdlib.h>
 #define MAX 15
 #define ESC 27
+#define ENTER 13
 
 typedef struct no *vertice;
 struct no { 
 	char nome;
+	int visitado;
 	vertice saindo[MAX]; // Vetor de ponteiros que apontam para as saidas desse vertice
 };	
 
@@ -26,18 +28,44 @@ typedef vertice grafo[MAX]; //Vetor de Ponteiros que apontam para os vertices do
 
 // Grafo[i]  aponta para um vertice que aponta para varias saidas (resumindo)
 
-vertice criar_vertice(char n){ // Aloca memoria para um vertice e retorna este
+void zera_visitados(grafo G){
+	int j;
+	for (j=0;j<MAX;j++){
+		if (G[j] != NULL){
+			G[j]->visitado = 0;
+		}
+	}
+}
+
+int adiciona_vertice(grafo G,char n){ // Aloca memoria para um vertice e coloca no grafo 
 	vertice p;
 	int i;
+	
+	for (i=0;i<MAX;i++){  //Verifica se ja existe o vertice com esse nome
+		if(G[i] != NULL){
+			if (G[i]->nome == n){
+				printf("\nJa existe um Vertice com o nome %c !!\n",n);
+				return 1;
+			}
+		}
+	}
 	
 	p = (vertice) malloc(sizeof(struct no));
 	
 	p->nome = n;
+	p->visitado = 0;
 	
-	for (i=0; i<MAX; i++){ //Anula todas as saidas desse vertice
+	for (i=0; i<MAX; i++) //Anula todas as saidas desse vertice
 		p->saindo[i] = NULL;	
-	}
-	return p;
+	
+	for(i=0;i<MAX;i++) //Percorre o vetor grafo ate achar um espaco nulo para inserir
+		if(G[i] == NULL){
+			G[i] = p;
+			return 0;
+		}
+	//Se chegou ate esse ponto, é porque nao achou um espaco vazio no vetor grafo
+	printf("\nGrafo cheio! nao foi possivel adicionar um vertice!\n");
+	return 1;
 }
 
 void Add_Vertice(grafo G){ // Adiciona um vertice no vetor grafo
@@ -46,34 +74,19 @@ void Add_Vertice(grafo G){ // Adiciona um vertice no vetor grafo
 	
 	system("cls");
 	printf("Insira o nome do vertice:\n");
+	
 	do{
 		fflush(stdin);
 		nome = toupper(getch());
-		if (nome == ESC)
-			return;
-		
-		for (i=0;i<MAX;i++){  //Verifica se ja existe o vertice com esse nome
-			if(G[i] != NULL){
-				if (G[i]->nome == nome){
-					printf("\nJa existe um Vertice com esse nome, insere outro!\n");
-					errou = 1;
-					break;
-				}
-			}
-			errou = 0;
-		}
-	}while (errou == 1);
+	}while(nome == ENTER);
 	
-	
-	for(i=0;i<MAX;i++) //Percorre o vetor grafo ate achar um espaco nulo para inserir
-		if(G[i] == NULL){
-			G[i] = criar_vertice(nome);
-			return;
-		}
-	//Se chegou ate esse ponto, é porque nao achou um espaco vazio no vetor grafo
-	printf("\nGrafo cheio! nao foi possivel adicionar um vertice!");
-	system("pause");
-	
+	if (nome == ESC)
+		return;
+
+	if (adiciona_vertice(G,nome) == 0){
+		return;
+	}
+	system("pause");	
 }
 
 void inicia_grafo(grafo G){ //Inicia todos os ponteiros do grafo como nullo
@@ -113,113 +126,247 @@ vertice busca_vertice(grafo G, char v){ //Busca no grafo o vertice cujo nome é v
 	return NULL;
 }
 
-void Add_Aresta(grafo G){ //Adiciona uma aresta entre os dois vertices, pode ser bi-direcional ou nao
-	char v1, v2,op;
+int adiciona_aresta(grafo G,char v1, char v2){ //Adiciona uma aresta entre os dois vertices
 	vertice origem,destino;
 	int j;
-	
-	system("cls");
-	mostrar(G);
-	printf("Qual o vertice que deseja adicionar aresta?\n");
-	
-	fflush(stdin);
-	v1 = toupper(getch());
-	if (v1 == ESC)
-		return;
 	
 	origem = busca_vertice(G,v1); //Recebe o ponteiro que aponta para o vertice origem
 	
 	if (origem != NULL){ //Se a busca pelo primeiro vertice foi um sucesso,
-		printf("Qual o vertice destino de %c?\n",origem->nome);
-		
-		fflush(stdin);
-		v2 = toupper(getch());
-		if (v2 == ESC)
-			return;
-		
 		destino = busca_vertice(G,v2);
 		if (destino != NULL){ //Se a busca pelo segundo vertice foi um sucesso,
-			do{
-				printf("\nEssa ligacao e bi-direcional? (s/n)\n"); 
-				fflush(stdin);
-				op = getch();
-				fflush(stdin);
-			}while(op != 's' && op != 'S' && op != 'n' && op != 'N');
-			
-			if (op == 's' || op == 'S'){ //Se for bi-direcional, liga tambem o destino a origem
-				for (j=0;j<MAX;j++){ 
-					if (destino->saindo[j] == NULL){ //Percorre o vetor de saidas ate encontrar um nulo e insere a aresta
-						destino->saindo[j] = origem;
-						break;
+			for (j=0;j<MAX;j++){
+				if (origem->saindo[j] != NULL){
+					if (origem->saindo[j]->nome == destino->nome){ //Caca se ja existe essa aresta se sim, saia
+						printf("\nA aresta %c -> %c ja existe!!\n",v1,v2);
+						return 1;
 					}
 				}
 			}
-			
-			for (j=0;j<MAX;j++){
+			for (j = 0;j<MAX;j++){ // 2 fors, meio porco mas o primeiro e para verificar se ja existe essa ligacao
 				if (origem->saindo[j] == NULL){ //Caça um indice vazio do vetor de ligacoes do vertice
 					origem->saindo[j] = destino;
-					break;
+					return 0;
 				}
 			}
 		}
 		else {
-			printf("\n Nao foi possivel encontar o segundo vertice!\n");
+			printf("\n Nao foi possivel encontar o vertice %c!\n",v2);
+			return 1;
+		}
+	}
+	else {
+		printf("\n Nao foi possivel encontar o vertice %c!\n",v1);
+		return 1;
+	}
+	
+	printf("\nO vertice %c ja tem o numero maximo de conexoes!!",v1);
+	return 1;
+}
+
+void Add_Aresta(grafo G){ // Obtem as input do usuario e adiciona as arestas desejadas
+	char v1, v2,op;
+	
+	system("cls");
+	mostrar(G);
+	
+	printf("Qual o vertice que deseja adicionar aresta?\n");
+	do{
+		fflush(stdin);
+		v1 = toupper(getch());
+	}while(v1 == ENTER);
+	
+	if (v1 == ESC)
+		return;
+		
+	printf("Qual o vertice destino de %c?\n",v1);	
+	
+	do{
+		fflush(stdin);
+		v2 = toupper(getch());
+	}while (v2 == ENTER);
+	
+	if (v2 == ESC)
+		return;
+		
+	if (adiciona_aresta(G,v1,v2) == 0)
+		printf("\nAresta %c -> %c adicionada com sucesso!",v1,v2);
+	else{
+		system("pause");
+		return;
+	}
+	
+	do{
+		printf("\nLigar tambem %c -> %c? (s/n)\n",v2,v1); 
+		fflush(stdin);
+		op = getch();
+		fflush(stdin);
+	}while(op != 's' && op != 'S' && op != 'n' && op != 'N' && op != ESC);
+	
+	if (toupper(op) != 'S')
+		return;
+	else {
+		if (adiciona_aresta(G,v2,v1) == 0){
+			printf("\nAresta %c -> %c adicionada com sucesso!\n",v2,v1);
+			system("pause");
+		}
+		else{
 			system("pause");
 			return;
 		}
 	}
-	else {
-		printf("\n Nao foi possivel encontar o primeiro vertice!\n");
-		system("pause");
-		return;
-	}
-}
-
-void Remove_Aresta(grafo G){
 	
 }
 
-void Remove_Vertice(grafo G){
-	char removido;
-	vertice r;
-	int i,k;
+
+int remove_aresta(grafo G,char v1, char v2){ //Remove a aresta v1 -> v2 se existir
+	int i;
+	
+	vertice origem, destino;
+	
+	origem = busca_vertice(G,v1); // Caca se existe o vertice 1
+	if (origem != NULL){
+		destino = busca_vertice(G,v2); //Caca se existe o vertice 2
+		if (destino != NULL){
+			for (i=0;i<MAX;i++){
+				if (origem->saindo[i] == destino){ //Localiza a ligacao e torna-a nula
+					origem->saindo[i] = NULL;
+					return 0;
+				}
+			}
+		}
+		else {
+			printf("\nNao foi encontrado o vertice %c!\n\n",v2);
+			return 1;
+		}
+	}
+	else {
+		printf("\nNao foi encontrado o vertice %c!\n\n",v1);
+		return 1;
+	}
+	printf("\nNao existe a aresta %c -> %c !!\n",v1,v2);
+	return 1;
+	
+}
+
+void Retirar_Aresta(grafo G){ //Obtem as input do usuario e executa a remocao da aresta
+	char v1,v2,op;
 	
 	system("cls");
 	mostrar(G);
-	printf("Qual o vertice que deseja remover?\n OBS: Todas as conexoes ATE ele e SAINDO dele serao apagadas!\n");
-	fflush(stdin);
-	removido = toupper(getch());
-	r = busca_vertice(G,removido);
-	if (r != NULL){
-		for (i=0;i<MAX;i++){
-			if (G[i] != NULL){
-				if (G[i]->nome == removido)
-					G[i] = NULL;
-				else {
-					for (k=0;k<MAX;k++){
-						if (G[i]->saindo[k] == r)
-							G[i]->saindo[k] = NULL;	
-					}
-				}
-			}			
+	printf("Insira qual o primeiro vertice da aresta que deseja retirar:\n");
+	
+	do {
+		fflush(stdin);
+		v1 = toupper(getch());
+	}while(v1 == ENTER);
+	
+	if (v1 == ESC)
+		return;
+	
+	printf("Qual aresta de %c deseja retirar?\n",v1);
+	
+	do{
+		fflush(stdin);
+		v2 = toupper(getch());
+	}while(v2 == ENTER);
+	
+	if (v2 == ESC)
+		return;
+		
+	if (remove_aresta(G,v1,v2) == 0){
+		printf("\nAresta %c -> %c removida com sucesso!\n\n",v1,v2);
+	}
+	else{
+		system("pause");
+		return;
+	}
+		
+			
+	printf("Remover %c -> %c tambem?(s/n) (se existe)\n", v2,v1);
+	
+	do{
+		fflush(stdin);
+		op = toupper(getch());	
+	}while(op != 'S' && op != 'N');
+	
+	if (op == 'S'){
+		if (remove_aresta(G,v2,v1) == 0){
+			printf("\nAresta %c -> %c removida com sucesso!\n\n",v2,v1);
+			system("pause");
 		}
-		system("cls");
-		printf("Vertice removido com sucesso!\n\n");
+		else{
+			system("pause");
+			return;
+		}
+	}
+
+	
+}
+
+int remove_vertice(grafo G,char removido){
+	vertice r;
+	int i,k;
+	
+	r = busca_vertice(G,removido);
+	if (r != NULL){ //Se achou o vertice,
+		for (i=0;i<MAX;i++)
+			if (G[i] != NULL){
+				if (G[i]->nome == removido) //Remove ele do Grafo
+					G[i] = NULL;
+				else 
+					for (k=0;k<MAX;k++)
+						if (G[i]->saindo[k] == r) //Retira todas as conexoes ate esse vertice de todos os vertices ainda existentes
+							G[i]->saindo[k] = NULL;	
+			}			
 		free(r);
+		return 0;
 	}
 	else{
 		system("cls");
-		printf("Nao foi possivel localizar esse vertice!\n\n");
+		printf("Nao foi possivel localizar o vertice %c!\n\n",removido);
+		return 1;
 	}
+}
+
+void Retirar_Vertice(grafo G){ //Obtem o input do usuario e executa a remocao do vertice
+	char removido;
+	system("cls");
+	mostrar(G);
+	printf("Qual o vertice que deseja remover?\n OBS: Todas as conexoes ATE ele e SAINDO dele serao apagadas!\n");
+	do{
+		fflush(stdin);
+		removido = toupper(getch());
+	}while(removido == ENTER);
+	
+	if (removido == ESC)
+		return;
+	
+	if (remove_vertice(G,removido) == 0){
+		printf("\nVertice %c removido com sucesso!\n",removido);
+	}
+	system("pause");
 }
 
 void introducao_do_trabalho(){
 	printf("Trabalho EDII - Marcia\n"
 			"Quarto Termo - BCC 2017\n\n"
-			"Antonio Eugenio Domingues Silva \t 161021336\n"
-			"Allison Francisco \t 0000000\n"
-			"Denis Akira Ise Washio \t 0000000\n\n\n");
+			"Antonio Eugenio Domingues Silva\n"
+			"Allison Francisco\n"
+			"Denis Akira Ise Washio\n\n\n");
 	system("pause");
+}
+
+
+
+int busca_profundidade(vertice inicio){
+	inicio->visitado = 1;
+	int i;
+	for (i=0;i<MAX;i++){
+		if (inicio->saindo[i] != NULL && inicio->saindo[i]->visitado == 0){
+			busca_profundidade(inicio->saindo[i]);
+		}
+	}
 }
 
 int main (){
@@ -227,9 +374,13 @@ int main (){
 	
 	int op;
 	grafo G;
+	char visitados[MAX] = ""; //Vetor que armazena todos os nomes dos vertices ja visitados na busca de profundidade
 	
 	inicia_grafo(G);
 	
+	//busca_profundidade(G,'i');
+	system("Pause");
+	int i;
 	do{
 		system("cls");
 		mostrar(G);
@@ -238,30 +389,37 @@ int main (){
 				"3-Adicionar Aresta\n"
 				"4-Remover Aresta\n"
 				"6-Sair\n"
-				"7-Mostrar\n");
+				"7-Busca em profundidade\n");
 	
 		do {
 			scanf("%d",&op);
-		}while(op < 0 || op > 7);
+		}while(op < 0 || op > 8);
 		
 		switch(op){
 			case 1:
 				Add_Vertice(G);
 				break;
 			case 2:
-				Remove_Vertice(G);
-				system("pause");
+				Retirar_Vertice(G);
 				break;
 			case 3:
 				Add_Aresta(G);
 				break;
 			case 4:
-				Remove_Aresta(G);
+				Retirar_Aresta(G);
 				break;
 			case 7:
-				mostrar(G);
+				busca_profundidade(busca_vertice(G,'A'));
+				for(i=0;i<MAX;i++){
+					if (G[i] != NULL)
+						printf("%d\n",G[i]->visitado);
+				}
 				system("pause");
 				break;
+			/*case 8:
+				mostrar(G);
+				system("pause");
+				break;*/
 			default:
 				break;
 		}
